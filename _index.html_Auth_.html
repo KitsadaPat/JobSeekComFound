@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobSeek &amp; ComFound — โหมดทดสอบระบบ</title>
+
+<!-- ============================================================
+     โหมดทดสอบ (NO-AUTH BUILD)
+     ปิดชั่วคราว: หน้าเข้าสู่ระบบ / สมัครสมาชิก / OTP / KYC
+     เปิดใช้งานทันที: Dashboard, Chat, Notification, Profile
+     โครงสร้าง:
+       [1] CSS
+       [2] HTML : Topbar + สลับบทบาททดสอบ
+       [3] HTML : หน้าหลัก / แชท / ห้องแชท / แจ้งเตือน / โปรไฟล์
+       [4] JS   : State + Router
+       [5] JS   : Dashboard Renderer
+       [6] JS   : Chat / Notification / Profile
+     ============================================================ -->
+
+<style>
+/* ================= [1] CSS ================= */
+:root{
+  --seeker:#FF7A45; --employer:#2563EB; --training:#7C3AED; --consult:#0D9488;
+  --accent:#FF7A45;
+  --bg:#F1F5F9; --card:#FFFFFF; --line:#E2E8F0;
+  --text:#0F172A; --muted:#64748B;
+  --ok:#16A34A; --warn:#F59E0B; --err:#DC2626;
+  --r:16px;
+}
+body[data-role="seeker"]  { --accent:var(--seeker); }
+body[data-role="employer"]{ --accent:var(--employer); }
+body[data-role="training"]{ --accent:var(--training); }
+body[data-role="consult"] { --accent:var(--consult); }
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI",Tahoma,-apple-system,sans-serif;
+  background:linear-gradient(160deg,#0B1220,#111C33);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;padding:16px;
+}
+#frame{
+  width:100%;max-width:430px;height:min(880px,96vh);
+  background:var(--bg);border-radius:26px;overflow:hidden;
+  box-shadow:0 30px 70px rgba(0,0,0,.55);
+  display:flex;flex-direction:column;position:relative;
+}
+#stage{flex:1;overflow-y:auto;overflow-x:hidden}
+#stage::-webkit-scrollbar{width:0}
+
+.scr{display:none;padding:20px 18px 26px;animation:fade .25s ease}
+.scr.on{display:block}
+.hide{display:none !important}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+h1{font-size:22px;font-weight:600}
+h2{font-size:18px;font-weight:600}
+h3{font-size:15px;font-weight:600}
+.sub{color:var(--muted);font-size:13px;line-height:1.6;margin-top:5px}
+.mt{margin-top:14px}
+
+/* ---------- แถบสลับบทบาททดสอบ ---------- */
+#rolebar{display:flex;gap:6px;padding:8px 10px;background:#0F172A;overflow-x:auto}
+#rolebar button{
+  white-space:nowrap;border:0;background:rgba(255,255,255,.13);color:#fff;
+  font-family:inherit;font-size:11px;padding:6px 12px;border-radius:8px;cursor:pointer;
+}
+#rolebar button.on{background:var(--accent);font-weight:600}
+
+/* ---------- Topbar ---------- */
+#topbar{
+  padding:14px 18px;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+#topbar b{font-size:16px;font-weight:600}
+#topbar small{display:block;font-size:11.5px;opacity:.85}
+.iconbtn{
+  width:36px;height:36px;border-radius:11px;border:0;
+  background:rgba(255,255,255,.2);color:#fff;font-size:16px;cursor:pointer;position:relative;
+}
+.badge{
+  position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:99px;
+  background:#fff;color:var(--err);font-size:10px;font-weight:700;
+  display:grid;place-items:center;padding:0 4px;
+}
+
+/* ---------- Card / ปุ่ม ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px;box-shadow:0 4px 18px rgba(15,23,42,.06)}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.btn{
+  width:100%;border:0;border-radius:12px;padding:12px;
+  font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  background:var(--accent);color:#fff;
+}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:#fff;color:var(--accent);border:1px solid var(--line)}
+.btn.sm{width:auto;padding:8px 14px;font-size:12.5px;border-radius:10px}
+
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px}
+.chip.ok{background:#DCFCE7;color:#15803D}
+.chip.info{background:#EFF6FF;color:var(--accent)}
+
+/* ---------- Dashboard ---------- */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px}
+.stat b{display:block;font-size:23px;font-weight:700;color:var(--accent)}
+.stat span{font-size:11.5px;color:var(--muted)}
+.jobcard{display:flex;gap:12px;align-items:flex-start}
+.jobcard .lg{width:44px;height:44px;flex:0 0 auto;border-radius:12px;display:grid;place-items:center;font-size:20px;background:#F1F5F9}
+.jobcard b{font-size:14.5px;display:block}
+.jobcard small{color:var(--muted);font-size:12px;display:block;margin-top:2px}
+.price{color:var(--accent);font-weight:700;font-size:13.5px;margin-top:6px;display:block}
+
+/* ---------- Chat ---------- */
+.chatitem{display:flex;gap:12px;align-items:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:14px;cursor:pointer}
+.av{width:44px;height:44px;flex:0 0 auto;border-radius:99px;display:grid;place-items:center;font-weight:700;color:#fff;font-size:15px;background:var(--accent)}
+.chatitem .tx{flex:1;min-width:0}
+.chatitem b{font-size:14px;display:block}
+.chatitem small{color:var(--muted);font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#msgs{display:flex;flex-direction:column;gap:9px;margin:14px 0 80px}
+.msg{max-width:78%;padding:10px 13px;border-radius:15px;font-size:13.5px;line-height:1.5}
+.msg.them{background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px;align-self:flex-start}
+.msg.me{background:var(--accent);color:#fff;border-bottom-right-radius:5px;align-self:flex-end}
+.msg time{display:block;font-size:10px;opacity:.65;margin-top:3px}
+#composer{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;background:#fff;border-top:1px solid var(--line);display:flex;gap:8px}
+#composer input{flex:1;padding:11px 15px;border:1px solid var(--line);border-radius:999px;font-family:inherit;font-size:14px;outline:none}
+#composer input:focus{border-color:var(--accent)}
+
+/* ---------- Notification ---------- */
+.noti{display:flex;gap:11px;padding:13px;background:#fff;border:1px solid var(--line);border-radius:14px;cursor:pointer}
+.noti.unread{border-color:var(--accent);background:#FFFBF8}
+.noti .ic{width:36px;height:36px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;font-size:16px;background:#F1F5F9}
+.noti b{font-size:13.5px;display:block}
+.noti p{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
+.noti time{font-size:10.5px;color:var(--muted);display:block;margin-top:4px}
+
+/* ---------- Profile ---------- */
+.phead{display:flex;gap:14px;align-items:center}
+.phead .av{width:62px;height:62px;font-size:22px}
+.rowline{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.rowline:last-child{border-bottom:0}
+.rowline span{color:var(--muted)}
+.menu{display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:14px}
+.menu button{display:flex;align-items:center;gap:12px;padding:14px 16px;border:0;border-bottom:1px solid var(--line);background:none;font-family:inherit;font-size:14px;color:var(--text);cursor:pointer;text-align:left}
+.menu button:last-child{border-bottom:0}
+.menu button i{margin-left:auto;color:var(--muted);font-style:normal}
+
+/* ---------- Bottom Nav ---------- */
+#nav{display:flex;border-top:1px solid var(--line);background:#fff}
+#nav button{
+  flex:1;border:0;background:none;padding:9px 0 12px;font-family:inherit;font-size:10.5px;
+  color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+#nav button span{font-size:19px;line-height:1}
+#nav button.on{color:var(--accent);font-weight:700}
+
+/* ---------- Toast ---------- */
+#toast{
+  position:absolute;left:50%;transform:translate(-50%,20px);bottom:80px;z-index:99;
+  background:#0F172A;color:#fff;padding:11px 18px;border-radius:999px;font-size:13px;
+  opacity:0;pointer-events:none;transition:.28s;max-width:88%;text-align:center;
+}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body data-role="seeker">
+
+<div id="frame">
+
+  <!-- ================= [2] แถบสลับบทบาท (สำหรับทดสอบ) ================= -->
+  <div id="rolebar" id="rolebar-box"></div>
+
+  <!-- ================= Topbar ================= -->
+  <header id="topbar">
+    <div>
+      <b id="tb-title">หน้าหลัก</b>
+      <small id="tb-sub">โหมดทดสอบระบบ</small>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="iconbtn" onclick="tab('notify')">🔔<span class="badge hide" id="tb-badge">0</span></button>
+      <button class="iconbtn" onclick="tab('profile')">👤</button>
+    </div>
+  </header>
+
+  <main id="stage">
+
+    <!-- ================= [3] หน้าหลัก ================= -->
+    <section class="scr on" id="sc-home">
+      <div id="home-body"></div>
+    </section>
+
+    <!-- ================= รายการแชท ================= -->
+    <section class="scr" id="sc-chats">
+      <h2>ข้อความ</h2>
+      <p class="sub">ทดสอบการรับ-ส่งข้อความในระบบ</p>
+      <div class="list" id="chat-list"></div>
+    </section>
+
+    <!-- ================= ห้องแชท ================= -->
+    <section class="scr" id="sc-room" style="position:relative;padding-bottom:0">
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn ghost sm" onclick="tab('chat')">←</button>
+        <div class="av" id="rm-av">A</div>
+        <div><b id="rm-name">-</b><br><small style="color:var(--ok);font-size:11px">● ออนไลน์</small></div>
+      </div>
+      <div id="msgs"></div>
+      <div id="composer">
+        <input id="rm-inp" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="btn sm" onclick="sendMsg()">ส่ง</button>
+      </div>
+    </section>
+
+    <!-- ================= การแจ้งเตือน ================= -->
+    <section class="scr" id="sc-notify">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>การแจ้งเตือน</h2>
+        <button class="btn ghost sm" onclick="readAll()">อ่านทั้งหมด</button>
+      </div>
+      <div class="list" id="noti-list"></div>
+    </section>
+
+    <!-- ================= โปรไฟล์ ================= -->
+    <section class="scr" id="sc-profile">
+      <div class="phead">
+        <div class="av" id="p-av">ท</div>
+        <div>
+          <h2 id="p-name">ผู้ใช้ทดสอบ</h2>
+          <span class="chip info" id="p-role">ผู้หางาน</span>
+          <span class="chip ok">โหมดทดสอบ</span>
+        </div>
+      </div>
+      <div class="card mt">
+        <div class="rowline"><span>อีเมล</span><b>test@demo.local</b></div>
+        <div class="rowline"><span>เบอร์โทร</span><b>08X-XXX-XXXX</b></div>
+        <div class="rowline"><span>โหมดปัจจุบัน</span><b>ทดสอบ (ไม่มีระบบล็อกอิน)</b></div>
+      </div>
+      <div class="menu">
+        <button onclick="toast('เปิดหน้าแก้ไขโปรไฟล์')">✏️ แก้ไขข้อมูลส่วนตัว<i>›</i></button>
+        <button onclick="toast('เปิดหน้าตั้งค่า')">⚙️ ตั้งค่าระบบ<i>›</i></button>
+        <button onclick="toast('ศูนย์ช่วยเหลือ 02-000-0000')">💬 ศูนย์ช่วยเหลือ<i>›</i></button>
+        <button onclick="resetDemo()" style="color:var(--err)">🔄 ล้างข้อมูลทดสอบ<i>›</i></button>
+      </div>
+      <p class="sub mt">หมายเหตุ: ระบบเข้าสู่ระบบและยืนยันตัวตน (KYC) ถูกปิดไว้ชั่วคราวเพื่อการทดสอบ</p>
+    </section>
+
+  </main>
+
+  <!-- ================= Bottom Nav ================= -->
+  <nav id="nav">
+    <button data-t="home"    class="on" onclick="tab('home')"><span>🏠</span>หน้าหลัก</button>
+    <button data-t="chat"    onclick="tab('chat')"><span>💬</span>แชท</button>
+    <button data-t="notify"  onclick="tab('notify')"><span>🔔</span>แจ้งเตือน</button>
+    <button data-t="profile" onclick="tab('profile')"><span>👤</span>โปรไฟล์</button>
+  </nav>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+/* ================= [4] STATE + ROUTER ================= */
+var ROLES = {
+  seeker  : {icon:"🧑‍💼", name:"ผู้หางาน"},
+  employer: {icon:"🏢",   name:"ผู้ว่าจ้าง"},
+  training: {icon:"🎓",   name:"ผู้ฝึกอบรม"},
+  consult : {icon:"🧠",   name:"ที่ปรึกษา"}
+};
+
+var S = {
+  role: "seeker",
+  chat: null,
+  notis: [
+    {ic:"💼", t:"มีงานใหม่ตรงกับโปรไฟล์คุณ", p:"ตำแหน่ง UX Designer ที่ บ.เอบีซี จำกัด — 45,000 บาท", tm:"5 นาทีที่แล้ว", r:false},
+    {ic:"✅", t:"ใบสมัครของคุณถูกเปิดอ่าน", p:"ผู้ว่าจ้างเปิดดูใบสมัครตำแหน่ง Frontend Developer แล้ว", tm:"2 ชั่วโมงที่แล้ว", r:false},
+    {ic:"🎓", t:"คอร์สที่คุณสนใจลดราคา", p:"คอร์ส React ฉบับมืออาชีพ ลด 40% วันสุดท้าย", tm:"เมื่อวาน", r:true}
+  ],
+  chats: [
+    {id:1, n:"ฝ่ายบุคคล — บ.เอบีซี", last:"สะดวกสัมภาษณ์วันพฤหัสฯ 10:00 น. ไหมครับ", tm:"10:24", un:2,
+     msgs:[{s:"them",t:"สวัสดีครับ ทางเราสนใจโปรไฟล์ของคุณมากครับ",tm:"10:20"},
+           {s:"me",  t:"ขอบคุณมากครับ ยินดีมากเลยครับ",           tm:"10:22"},
+           {s:"them",t:"สะดวกสัมภาษณ์วันพฤหัสฯ 10:00 น. ไหมครับ", tm:"10:24"}]},
+    {id:2, n:"ครูมานี สอนดี", last:"คอร์สรอบใหม่เปิดรับแล้วนะคะ", tm:"เมื่อวาน", un:0,
+     msgs:[{s:"them",t:"คอร์สรอบใหม่เปิดรับแล้วนะคะ",tm:"18:02"}]},
+    {id:3, n:"ที่ปรึกษา วิชาญ", last:"ส่งไฟล์สรุปให้แล้วครับ", tm:"2 วันก่อน", un:0,
+     msgs:[{s:"them",t:"ส่งไฟล์สรุปให้แล้วครับ",tm:"09:15"}]}
+  ]
+};
+
+function save(){ try{ localStorage.setItem("jsc_demo", JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{
+    var d = localStorage.getItem("jsc_demo");
+    if(d){ var o = JSON.parse(d); for(var k in o){ S[k] = o[k]; } }
+  }catch(e){}
+}
+function resetDemo(){
+  try{ localStorage.removeItem("jsc_demo"); }catch(e){}
+  location.reload();
+}
+
+function go(id){
+  var all = document.querySelectorAll(".scr");
+  for(var i=0;i<all.length;i++){ all[i].classList.remove("on"); }
+  var el = document.getElementById(id);
+  if(el) el.classList.add("on");
+  document.getElementById("topbar").style.display = (id === "sc-room") ? "none" : "flex";
+  document.getElementById("stage").scrollTop = 0;
+}
+function toast(m){
+  var t = document.getElementById("toast");
+  t.textContent = m; t.classList.add("on");
+  clearTimeout(t._x);
+  t._x = setTimeout(function(){ t.classList.remove("on"); }, 2200);
+}
+function setRole(k){
+  S.role = k; save();
+  document.body.setAttribute("data-role", k);
+  var bs = document.querySelectorAll("#rolebar button");
+  for(var i=0;i<bs.length;i++){ bs[i].classList.toggle("on", bs[i].dataset.k === k); }
+  buildRoleBar();
+  tab("home");
+  toast("สลับเป็นบทบาท: " + ROLES[k].name);
+}
+function buildRoleBar(){
+  var bar = document.getElementById("rolebar");
+  var html = "";
+  for(var k in ROLES){
+    html += '<button data-k="'+k+'" class="'+(k===S.role?"on":"")+'" onclick="setRole(\''+k+'\')">'
+          + ROLES[k].icon + " " + ROLES[k].name + "</button>";
+  }
+  bar.innerHTML = html;
+}
+
+/* ================= [5] DASHBOARD RENDERER ================= */
+var DASH = {
+  seeker:{
+    title:"หน้าหลัก", sub:"ค้นหางานที่ใช่สำหรับคุณ",
+    stats:[["24","งานที่แนะนำวันนี้"],["8","ใบสมัครที่ส่งแล้ว"],["3","นัดสัมภาษณ์"],["86%","ความสมบูรณ์โปรไฟล์"]],
+    head:"งานแนะนำสำหรับคุณ",
+    items:[
+      {ic:"🎨", t:"UX/UI Designer", s:"บ.เอบีซี จำกัด · กรุงเทพฯ · ไฮบริด", p:"฿40,000 - 55,000 / เดือน"},
+      {ic:"💻", t:"Frontend Developer", s:"ดิจิทัลเวิร์ค · ทำงานทางไกล 100%", p:"฿50,000 - 70,000 / เดือน"},
+      {ic:"📊", t:"Data Analyst (ฟรีแลนซ์)", s:"สตาร์ทอัพ XYZ · สัญญา 3 เดือน", p:"฿1,200 / ชั่วโมง"}
+    ]
+  },
+  employer:{
+    title:"แดชบอร์ดผู้ว่าจ้าง", sub:"จัดการประกาศงานและผู้สมัคร",
+    stats:[["6","ประกาศงานที่เปิดอยู่"],["142","ผู้สมัครทั้งหมด"],["12","รอสัมภาษณ์"],["4","จ้างงานแล้ว"]],
+    head:"ประกาศงานที่เปิดรับ",
+    items:[
+      {ic:"🎨", t:"UX/UI Designer", s:"ผู้สมัคร 38 คน · ใหม่ 5 คน", p:"ปิดรับใน 12 วัน"},
+      {ic:"💻", t:"Backend Engineer", s:"ผู้สมัคร 61 คน · ใหม่ 9 คน", p:"ปิดรับใน 6 วัน"},
+      {ic:"📣", t:"Digital Marketing", s:"ผู้สมัคร 43 คน · ใหม่ 2 คน", p:"ปิดรับใน 20 วัน"}
+    ]
+  },
+  training:{
+    title:"แดชบอร์ดผู้ฝึกอบรม", sub:"จัดการคอร์สและผู้เรียน",
+    stats:[["9","คอร์สที่เปิดสอน"],["1,240","ผู้เรียนสะสม"],["4.8","คะแนนเฉลี่ย"],["฿182K","รายได้เดือนนี้"]],
+    head:"คอร์สของคุณ",
+    items:[
+      {ic:"⚛️", t:"React ฉบับมืออาชีพ", s:"ผู้เรียน 420 คน · 4.9 ★", p:"฿2,900 / คอร์ส"},
+      {ic:"🐍", t:"Python สำหรับงานข้อมูล", s:"ผู้เรียน 315 คน · 4.7 ★", p:"฿2,400 / คอร์ส"},
+      {ic:"🎯", t:"เตรียมสัมภาษณ์งานสายไอที", s:"ผู้เรียน 188 คน · 4.8 ★", p:"฿1,500 / คอร์ส"}
+    ]
+  },
+  consult:{
+    title:"แดชบอร์ดที่ปรึกษา", sub:"ตารางนัดหมายและลูกค้า",
+    stats:[["14","นัดหมายเดือนนี้"],["32","ลูกค้าสะสม"],["4.9","คะแนนเฉลี่ย"],["฿96K","รายได้เดือนนี้"]],
+    head:"นัดหมายที่กำลังจะถึง",
+    items:[
+      {ic:"🧠", t:"ให้คำปรึกษาวางแผนอาชีพ", s:"คุณสมหญิง · วันนี้ 14:00 น.", p:"฿1,500 / ชั่วโมง"},
+      {ic:"📄", t:"ตรวจและปรับปรุงเรซูเม่", s:"คุณธนา · พรุ่งนี้ 10:30 น.", p:"฿900 / ครั้ง"},
+      {ic:"🚀", t:"ที่ปรึกษาธุรกิจสตาร์ทอัพ", s:"บ.นิวเวฟ · ศุกร์ 16:00 น.", p:"฿3,000 / ชั่วโมง"}
+    ]
+  }
+};
+
+function buildHome(){
+  var d = DASH[S.role] || DASH.seeker;
+  document.getElementById("tb-title").textContent = d.title;
+  document.getElementById("tb-sub").textContent = d.sub;
+
+  var h = '<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px">'
+        + '<div><b style="font-size:14px">โหมดทดสอบระบบ</b>'
+        + '<div class="sub" style="margin-top:4px">ปิดระบบล็อกอินและ KYC ชั่วคราว</div></div>'
+        + '<span class="chip ok">พร้อมใช้</span></div>';
+
+  h += '<div class="stats">';
+  for(var i=0;i<d.stats.length;i++){
+    h += '<div class="stat"><b>'+d.stats[i][0]+'</b><span>'+d.stats[i][1]+'</span></div>';
+  }
+  h += '</div>';
+
+  h += '<h2 style="margin-top:20px">'+d.head+'</h2><div class="list">';
+  for(var j=0;j<d.items.length;j++){
+    var it = d.items[j];
+    h += '<div class="card jobcard" onclick="toast(\'เปิดรายละเอียด: '+it.t+'\')">'
+       + '<div class="lg">'+it.ic+'</div><div style="flex:1"><b>'+it.t+'</b>'
+       + '<small>'+it.s+'</small><span class="price">'+it.p+'</span></div></div>';
+  }
+  h += '</div>';
+  document.getElementById("home-body").innerHTML = h;
+}
+
+/* ================= [6] CHAT / NOTIFY / PROFILE ================= */
+function tab(t){
+  var map = {home:"sc-home", chat:"sc-chats", notify:"sc-notify", profile:"sc-profile"};
+  if(t === "home")    buildHome();
+  if(t === "chat")   { buildChats();  setTB("ข้อความ","พูดคุยกับผู้ติดต่อ"); }
+  if(t === "notify") { buildNotis();  setTB("การแจ้งเตือน","อัปเดตล่าสุด"); }
+  if(t === "profile"){ buildProfile();setTB("โปรไฟล์", ROLES[S.role].name); }
+
+  var bs = document.querySelectorAll("#nav button");
+  for(var i=0;i<bs.length;i++){ bs[i].classList.toggle("on", bs[i].dataset.t === t); }
+  go(map[t]);
+}
+function setTB(a,b){
+  document.getElementById("tb-title").textContent = a;
+  document.getElementById("tb-sub").textContent = b;
+}
+
+function buildChats(){
+  var h = "";
+  for(var i=0;i<S.chats.length;i++){
+    var c = S.chats[i];
+    h += '<div class="chatitem" onclick="openRoom('+c.id+')">'
+       + '<div class="av">'+c.n.charAt(0)+'</div>'
+       + '<div class="tx"><b>'+c.n+'</b><small>'+c.last+'</small></div>'
+       + '<div style="text-align:right"><small style="color:var(--muted);font-size:11px">'+c.tm+'</small>'
+       + (c.un ? '<div class="chip info" style="margin-top:4px">'+c.un+'</div>' : '')
+       + '</div></div>';
+  }
+  document.getElementById("chat-list").innerHTML = h;
+}
+function findChat(id){
+  for(var i=0;i<S.chats.length;i++){ if(S.chats[i].id === id) return S.chats[i]; }
+  return null;
+}
+function openRoom(id){
+  var c = findChat(id);
+  if(!c) return;
+  c.un = 0; S.chat = id; save();
+  document.getElementById("rm-name").textContent = c.n;
+  document.getElementById("rm-av").textContent = c.n.charAt(0);
+  drawMsgs(); go("sc-room");
+}
+function drawMsgs(){
+  var c = findChat(S.chat);
+  if(!c) return;
+  var h = "";
+  for(var i=0;i<c.msgs.length;i++){
+    h += '<div class="msg '+c.msgs[i].s+'">'+c.msgs[i].t+'<time>'+c.msgs[i].tm+'</time></div>';
+  }
+  document.getElementById("msgs").innerHTML = h;
+  var st = document.getElementById("stage");
+  setTimeout(function(){ st.scrollTop = st.scrollHeight; }, 60);
+}
+function sendMsg(){
+  var i = document.getElementById("rm-inp");
+  var v = i.value.trim();
+  if(!v) return;
+  var c = findChat(S.chat);
+  if(!c) return;
+  var now = new Date().toTimeString().slice(0,5);
+  c.msgs.push({s:"me", t:v, tm:now});
+  c.last = v; c.tm = now;
+  i.value = ""; drawMsgs(); save();
+  setTimeout(function(){
+    c.msgs.push({s:"them", t:"รับทราบครับ เดี๋ยวทางเราติดต่อกลับโดยเร็วที่สุดครับ", tm:now});
+    c.last = "รับทราบครับ...";
+    drawMsgs(); save();
+  }, 1200);
+}
+
+function buildNotis(){
+  var h = "", un = 0;
+  for(var i=0;i<S.notis.length;i++){
+    var n = S.notis[i];
+    if(!n.r) un++;
+    h += '<div class="noti '+(n.r?"":"unread")+'" onclick="readOne('+i+')">'
+       + '<div class="ic">'+n.ic+'</div><div><b>'+n.t+'</b><p>'+n.p+'</p>'
+       + '<time>'+n.tm+'</time></div></div>';
+  }
+  document.getElementById("noti-list").innerHTML = h;
+  var b = document.getElementById("tb-badge");
+  b.textContent = un;
+  b.classList.toggle("hide", un === 0);
+}
+function readOne(i){ S.notis[i].r = true; save(); buildNotis(); }
+function readAll(){
+  for(var i=0;i<S.notis.length;i++){ S.notis[i].r = true; }
+  save(); buildNotis(); toast("ทำเครื่องหมายว่าอ่านแล้วทั้งหมด");
+}
+
+function buildProfile(){
+  document.getElementById("p-role").textContent = ROLES[S.role].name;
+}
+
+/* ================= INIT ================= */
+document.addEventListener("DOMContentLoaded", function(){
+  load();
+  document.body.setAttribute("data-role", S.role);
+  buildRoleBar();
+  buildNotis();
+  tab("home");
+});
+</script>
+</body>
+</html>
