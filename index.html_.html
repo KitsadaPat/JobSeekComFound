@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบสมาชิก + KYC</title>
+
+<!-- ============================================================
+     [ส่วนที่ 1] STYLES — CSS ทั้งหมดของระบบ
+     ============================================================ -->
+<style>
+  :root{
+    --primary:#2563eb; --primary-dark:#1d4ed8;
+    --bg:#f1f5f9; --card:#ffffff; --text:#0f172a;
+    --muted:#64748b; --border:#e2e8f0;
+    --ok:#16a34a; --warn:#d97706; --err:#dc2626;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",Tahoma,-apple-system,sans-serif;
+    background:var(--bg); color:var(--text);
+    min-height:100vh; padding:20px;
+    display:flex; align-items:flex-start; justify-content:center;
+  }
+  .wrap{width:100%;max-width:460px}
+  .card{
+    background:var(--card); border-radius:var(--radius);
+    padding:28px 24px; box-shadow:0 4px 24px rgba(0,0,0,.08);
+    margin-bottom:16px;
+  }
+  h1{font-size:22px;margin-bottom:6px;text-align:center}
+  h2{font-size:17px;margin-bottom:14px}
+  .sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:22px}
+  label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px}
+  input[type=text],input[type=email],input[type=password],input[type=file]{
+    width:100%; padding:11px 13px; border:1px solid var(--border);
+    border-radius:9px; font-size:15px; background:#fff; font-family:inherit;
+  }
+  input:focus{outline:none;border-color:var(--primary)}
+  button{
+    width:100%; padding:12px; margin-top:18px; border:none;
+    border-radius:9px; background:var(--primary); color:#fff;
+    font-size:15px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  button:hover{background:var(--primary-dark)}
+  button.ghost{background:#fff;color:var(--primary);border:1px solid var(--border)}
+  button.ghost:hover{background:#f8fafc}
+  .link{text-align:center;font-size:14px;margin-top:16px;color:var(--muted)}
+  .link a{color:var(--primary);cursor:pointer;font-weight:600;text-decoration:none}
+  .msg{
+    padding:10px 13px;border-radius:9px;font-size:13.5px;
+    margin-top:14px;display:none;
+  }
+  .msg.show{display:block}
+  .msg.ok{background:#dcfce7;color:#166534}
+  .msg.err{background:#fee2e2;color:#991b1b}
+  .badge{
+    display:inline-block;padding:4px 11px;border-radius:999px;
+    font-size:12px;font-weight:700;
+  }
+  .badge.pending{background:#fef3c7;color:var(--warn)}
+  .badge.verified{background:#dcfce7;color:var(--ok)}
+  .badge.none{background:#e2e8f0;color:var(--muted)}
+  .row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:11px 0;border-bottom:1px solid var(--border);font-size:14px;
+  }
+  .row:last-child{border-bottom:none}
+  .row span:first-child{color:var(--muted)}
+  .preview{
+    width:100%;max-height:200px;object-fit:contain;
+    border-radius:9px;margin-top:12px;border:1px solid var(--border);display:none;
+  }
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============================================================
+       [ส่วนที่ 2] HTML — หน้า LOGIN
+       ============================================================ -->
+  <div class="card" id="page-login">
+    <h1>เข้าสู่ระบบ</h1>
+    <p class="sub">กรอกอีเมลและรหัสผ่านเพื่อเข้าใช้งาน</p>
+
+    <label for="li-email">อีเมล</label>
+    <input type="email" id="li-email" placeholder="you@example.com" autocomplete="username">
+
+    <label for="li-pass">รหัสผ่าน</label>
+    <input type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password">
+
+    <button onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="msg" id="li-msg"></div>
+    <p class="link">ยังไม่มีบัญชี? <a onclick="show('register')">สมัครสมาชิก</a></p>
+  </div>
+
+  <!-- ============================================================
+       [ส่วนที่ 3] HTML — หน้า REGISTER
+       ============================================================ -->
+  <div class="card hidden" id="page-register">
+    <h1>สมัครสมาชิก</h1>
+    <p class="sub">สร้างบัญชีใหม่ใช้เวลาไม่ถึง 1 นาที</p>
+
+    <label for="rg-name">ชื่อ-นามสกุล</label>
+    <input type="text" id="rg-name" placeholder="สมชาย ใจดี">
+
+    <label for="rg-email">อีเมล</label>
+    <input type="email" id="rg-email" placeholder="you@example.com">
+
+    <label for="rg-pass">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
+    <input type="password" id="rg-pass" placeholder="••••••••">
+
+    <label for="rg-pass2">ยืนยันรหัสผ่าน</label>
+    <input type="password" id="rg-pass2" placeholder="••••••••">
+
+    <button onclick="doRegister()">สมัครสมาชิก</button>
+    <div class="msg" id="rg-msg"></div>
+    <p class="link">มีบัญชีแล้ว? <a onclick="show('login')">เข้าสู่ระบบ</a></p>
+  </div>
+
+  <!-- ============================================================
+       [ส่วนที่ 4] HTML — หน้า DASHBOARD (ต้องล็อกอินก่อน)
+       ============================================================ -->
+  <div class="card hidden" id="page-dashboard">
+    <h1>ข้อมูลบัญชี</h1>
+    <p class="sub" id="db-welcome">—</p>
+
+    <div class="row"><span>ชื่อ</span><strong id="db-name">—</strong></div>
+    <div class="row"><span>อีเมล</span><strong id="db-email">—</strong></div>
+    <div class="row"><span>สถานะ KYC</span><span id="db-kyc"></span></div>
+    <div class="row"><span>สมัครเมื่อ</span><strong id="db-date">—</strong></div>
+
+    <button onclick="show('kyc')">ยืนยันตัวตน (KYC)</button>
+    <button class="ghost" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+
+  <!-- ============================================================
+       [ส่วนที่ 5] HTML — หน้า KYC UPLOAD
+       ============================================================ -->
+  <div class="card hidden" id="page-kyc">
+    <h1>ยืนยันตัวตน</h1>
+    <p class="sub">อัปโหลดบัตรประชาชนหรือพาสปอร์ต (ไฟล์ภาพ ไม่เกิน 2MB)</p>
+
+    <label for="kyc-id">เลขบัตรประชาชน / พาสปอร์ต</label>
+    <input type="text" id="kyc-id" placeholder="1-2345-67890-12-3">
+
+    <label for="kyc-file">เอกสารยืนยันตัวตน</label>
+    <input type="file" id="kyc-file" accept="image/*" onchange="previewFile(event)">
+    <img class="preview" id="kyc-preview" alt="ตัวอย่างเอกสาร">
+
+    <button onclick="doKyc()">ส่งข้อมูลยืนยันตัวตน</button>
+    <button class="ghost" onclick="show('dashboard')">ย้อนกลับ</button>
+    <div class="msg" id="kyc-msg"></div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     [ส่วนที่ 6] JAVASCRIPT — ตรรกะการทำงานทั้งหมด
+     ============================================================ -->
+<script>
+/* ---------- 6.1 ตัวช่วยจัดการข้อมูล (localStorage) ---------- */
+var DB_KEY = "app_users";
+var SESSION_KEY = "app_session";
+
+function getUsers(){
+  try { return JSON.parse(localStorage.getItem(DB_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveUsers(users){
+  localStorage.setItem(DB_KEY, JSON.stringify(users));
+}
+function currentUser(){
+  var email = localStorage.getItem(SESSION_KEY);
+  if(!email) return null;
+  return getUsers()[email] || null;
+}
+
+/* ---------- 6.2 ตัวช่วยแสดงข้อความ / สลับหน้า ---------- */
+function msg(id, text, type){
+  var el = document.getElementById(id);
+  el.textContent = text;
+  el.className = "msg show " + (type || "err");
+}
+function clearMsg(id){
+  document.getElementById(id).className = "msg";
+}
+function show(page){
+  var pages = ["login","register","dashboard","kyc"];
+  for(var i=0;i<pages.length;i++){
+    document.getElementById("page-"+pages[i]).classList.add("hidden");
+  }
+  document.getElementById("page-"+page).classList.remove("hidden");
+  if(page === "dashboard") renderDashboard();
+  window.scrollTo(0,0);
+}
+
+/* ---------- 6.3 สมัครสมาชิก ---------- */
+function doRegister(){
+  clearMsg("rg-msg");
+  var name  = document.getElementById("rg-name").value.trim();
+  var email = document.getElementById("rg-email").value.trim().toLowerCase();
+  var p1    = document.getElementById("rg-pass").value;
+  var p2    = document.getElementById("rg-pass2").value;
+
+  if(!name || !email || !p1){ return msg("rg-msg","กรุณากรอกข้อมูลให้ครบทุกช่อง"); }
+  if(email.indexOf("@") < 1){ return msg("rg-msg","รูปแบบอีเมลไม่ถูกต้อง"); }
+  if(p1.length < 6){ return msg("rg-msg","รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"); }
+  if(p1 !== p2){ return msg("rg-msg","รหัสผ่านทั้งสองช่องไม่ตรงกัน"); }
+
+  var users = getUsers();
+  if(users[email]){ return msg("rg-msg","อีเมลนี้ถูกใช้งานแล้ว"); }
+
+  users[email] = {
+    name: name,
+    email: email,
+    pass: p1,                       // *หมายเหตุ: เดโมเท่านั้น ระบบจริงต้องเข้ารหัสฝั่งเซิร์ฟเวอร์
+    kyc: "none",                    // none | pending | verified
+    idNumber: "",
+    docName: "",
+    createdAt: new Date().toLocaleDateString("th-TH")
+  };
+  saveUsers(users);
+
+  msg("rg-msg","สมัครสมาชิกสำเร็จ! กำลังพาไปหน้าเข้าสู่ระบบ...","ok");
+  setTimeout(function(){
+    document.getElementById("li-email").value = email;
+    show("login");
+  }, 1200);
+}
+
+/* ---------- 6.4 เข้าสู่ระบบ ---------- */
+function doLogin(){
+  clearMsg("li-msg");
+  var email = document.getElementById("li-email").value.trim().toLowerCase();
+  var pass  = document.getElementById("li-pass").value;
+
+  if(!email || !pass){ return msg("li-msg","กรุณากรอกอีเมลและรหัสผ่าน"); }
+
+  var user = getUsers()[email];
+  if(!user || user.pass !== pass){
+    return msg("li-msg","อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+  }
+
+  localStorage.setItem(SESSION_KEY, email);
+  document.getElementById("li-pass").value = "";
+  show("dashboard");
+}
+
+/* ---------- 6.5 ออกจากระบบ ---------- */
+function doLogout(){
+  localStorage.removeItem(SESSION_KEY);
+  show("login");
+}
+
+/* ---------- 6.6 แสดงข้อมูลหน้า Dashboard ---------- */
+function renderDashboard(){
+  var u = currentUser();
+  if(!u){ return show("login"); }
+
+  document.getElementById("db-welcome").textContent = "สวัสดี, " + u.name;
+  document.getElementById("db-name").textContent  = u.name;
+  document.getElementById("db-email").textContent = u.email;
+  document.getElementById("db-date").textContent  = u.createdAt;
+
+  var labels = { none:"ยังไม่ยืนยัน", pending:"รอตรวจสอบ", verified:"ยืนยันแล้ว" };
+  var kycEl = document.getElementById("db-kyc");
+  kycEl.className = "badge " + u.kyc;
+  kycEl.textContent = labels[u.kyc];
+}
+
+/* ---------- 6.7 พรีวิวไฟล์ KYC ---------- */
+function previewFile(e){
+  var file = e.target.files[0];
+  var img = document.getElementById("kyc-preview");
+  if(!file){ img.style.display = "none"; return; }
+
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    img.src = ev.target.result;
+    img.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ---------- 6.8 ส่งข้อมูล KYC ---------- */
+function doKyc(){
+  clearMsg("kyc-msg");
+  var idNum = document.getElementById("kyc-id").value.trim();
+  var file  = document.getElementById("kyc-file").files[0];
+
+  if(!idNum){ return msg("kyc-msg","กรุณากรอกเลขบัตรประชาชนหรือพาสปอร์ต"); }
+  if(!file){ return msg("kyc-msg","กรุณาแนบไฟล์เอกสาร"); }
+  if(file.size > 2 * 1024 * 1024){ return msg("kyc-msg","ไฟล์ใหญ่เกิน 2MB"); }
+
+  var users = getUsers();
+  var email = localStorage.getItem(SESSION_KEY);
+  if(!users[email]){ return show("login"); }
+
+  users[email].idNumber = idNum;
+  users[email].docName  = file.name;
+  users[email].kyc      = "pending";
+  saveUsers(users);
+
+  msg("kyc-msg","ส่งข้อมูลสำเร็จ! อยู่ระหว่างรอเจ้าหน้าที่ตรวจสอบ","ok");
+  setTimeout(function(){ show("dashboard"); }, 1500);
+}
+
+/* ---------- 6.9 จุดเริ่มต้นโปรแกรม ---------- */
+document.addEventListener("DOMContentLoaded", function(){
+  // กด Enter ในช่องรหัสผ่านหน้า Login = เข้าสู่ระบบ
+  document.getElementById("li-pass").addEventListener("keydown", function(ev){
+    if(ev.key === "Enter") doLogin();
+  });
+
+  // ถ้ามี session ค้างอยู่ ให้เข้าหน้า Dashboard เลย
+  show(currentUser() ? "dashboard" : "login");
+});
+</script>
+</body>
+</html>
