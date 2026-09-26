@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JobSeek &amp; ComFound</title>
+<style>
+:root{--accent:#FF7A45;--ink:#C2410C;--bg:#F4F2EE;--line:#E0DFDC;--text:#191919;--muted:#5F5F5F;--ok:#057642;--warn:#B45309;--err:#CC1016;--navh:3.6rem}
+body[data-role=seeker]{--accent:#FF7A45;--ink:#C2410C}
+body[data-role=employer]{--accent:#2563EB;--ink:#1D4ED8}
+body[data-role=training]{--accent:#7C3AED;--ink:#6D28D9}
+body[data-role=consult]{--accent:#0D9488;--ink:#0F766E}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{font:1rem/1.5 -apple-system,"Segoe UI","Leelawadee UI",Tahoma,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom,0px))}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.hide{display:none!important}
+.grow{flex:1;min-width:0}
+/* header */
+#top{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line)}
+.bar{max-width:72rem;margin:auto;display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem}
+.logo{width:2.2rem;height:2.2rem;border-radius:.3rem;background:var(--accent);color:#fff;font-weight:800;display:grid;place-items:center;flex:none;font-size:.95rem}
+.search{flex:1;min-width:0;max-width:22rem;background:#EDF3F8;border:0;border-radius:.3rem;padding:.55rem .8rem;font-size:.9rem}
+#nav{position:fixed;left:0;right:0;bottom:0;height:calc(var(--navh) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);display:flex;background:#fff;border-top:1px solid var(--line)}
+#nav button{flex:1;border:0;background:none;color:var(--muted);font-size:.72rem;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+#nav button span{font-size:1.3rem;line-height:1}
+#nav em{font-style:normal}
+#nav button.on{color:var(--text);font-weight:600;box-shadow:inset 0 3px 0 var(--ink)}
+.bd{position:absolute;top:.35rem;left:55%;min-width:1.1rem;height:1.1rem;border-radius:2rem;background:var(--err);color:#fff;font-size:.65rem;display:grid;place-items:center;padding:0 .25rem}
+/* tools */
+#tools{max-width:72rem;margin:.6rem auto 0;padding:0 .75rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+#roles{display:flex;gap:.4rem;overflow-x:auto;flex:1 1 100%;padding-bottom:.15rem}
+#ctl{display:flex;gap:.6rem;flex-wrap:wrap}
+.grp{display:flex;gap:.3rem}
+.pill{white-space:nowrap;background:#fff;border:1px solid var(--muted);border-radius:2rem;padding:.25rem .8rem;font-size:.82rem}
+.pill.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.pill:disabled{opacity:.4;cursor:default}
+/* layout */
+#wrap{max-width:72rem;margin:.75rem auto;padding:0 .75rem;display:grid;gap:.75rem;grid-template-columns:minmax(0,1fr)}
+#side,#news{display:none;align-self:start;position:sticky;top:4.5rem}
+.card{background:#fff;border:1px solid var(--line);border-radius:.5rem;padding:1rem}
+.card.flush{padding:0;overflow:hidden}
+.scr{display:none}.scr.on{display:block}
+.scr h2{font-size:1.15rem;margin:1.1rem 0 0}
+.scr h2:first-child{margin-top:0}
+.list{display:flex;flex-direction:column;gap:.75rem;margin-top:.75rem}
+.row{display:flex;justify-content:space-between;align-items:center;gap:.75rem}
+.sub{color:var(--muted);font-size:.85rem;margin-top:.15rem}
+.chip{background:#DFF0E5;color:var(--ok);border-radius:2rem;padding:.2rem .7rem;font-size:.75rem;font-weight:600;white-space:nowrap}
+.chip.b{background:#EAF3FB;color:var(--ink)}
+.btn{border:0;background:var(--ink);color:#fff;border-radius:2rem;padding:.5rem 1.1rem;font-weight:600}
+.btn.ghost{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.btn.sm{padding:.3rem .8rem;font-size:.85rem}
+/* home */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.75rem;margin-top:.75rem}
+.stat{padding:.8rem 1rem}
+.stat b{display:block;font-size:1.5rem;color:var(--ink)}
+.stat span{font-size:.8rem;color:var(--muted)}
+.job{display:flex;gap:.75rem;align-items:flex-start;cursor:pointer}
+.job:hover b{text-decoration:underline}
+.lg{width:3rem;height:3rem;background:#EDF3F8;border-radius:.25rem;display:grid;place-items:center;font-size:1.4rem;flex:none}
+.job b{display:block;color:var(--ink)}
+.job small{display:block;color:var(--muted);font-size:.85rem}
+.price{display:block;font-weight:600;font-size:.9rem;margin-top:.3rem}
+.ring{--p:0;--c:var(--ok);width:2.8rem;height:2.8rem;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--line) 0);display:grid;place-items:center;font-size:.7rem;font-weight:700;flex:none;position:relative}
+.ring::before{content:"";position:absolute;inset:.28rem;background:#fff;border-radius:50%}
+.ring span{position:relative}
+/* side */
+.cover{height:3.5rem;background:var(--accent);margin:-1rem -1rem 0;border-radius:.5rem .5rem 0 0}
+.av{width:3rem;height:3rem;flex:none;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700}
+.av.big{width:4rem;height:4rem;font-size:1.4rem;margin-top:-2rem;border:2px solid #fff}
+#side b{display:block;margin-top:.4rem}
+.mini{display:flex;justify-content:space-between;font-size:.82rem;padding:.4rem 0;border-top:1px solid var(--line);margin-top:.5rem}
+.mini strong{color:var(--ink)}
+#news h3{font-size:1rem;margin-bottom:.4rem}
+#news p{font-size:.85rem;padding:.4rem 0;border-top:1px solid var(--line)}
+/* chat */
+.ci{display:flex;gap:.75rem;align-items:center;padding:.8rem 1rem;border-bottom:1px solid var(--line);cursor:pointer}
+.ci:last-child{border:0}.ci:hover{background:#F3F6F8}
+.ci b{display:block}
+.ci small{display:block;color:var(--muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci .tm{font-size:.75rem;color:var(--muted);text-align:right;flex:none}
+.msgs{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0}
+.msg{max-width:80%;padding:.6rem .8rem;border-radius:.75rem;font-size:.95rem;word-break:break-word}
+.msg.them{background:#EDF3F8;align-self:flex-start;border-bottom-left-radius:.2rem}
+.msg.me{background:var(--ink);color:#fff;align-self:flex-end;border-bottom-right-radius:.2rem}
+.msg time{display:block;font-size:.65rem;opacity:.7;margin-top:.15rem}
+#cmp{position:sticky;bottom:calc(var(--navh) + env(safe-area-inset-bottom,0px));background:#fff;border:1px solid var(--line);border-radius:.5rem;padding:.6rem;display:flex;gap:.5rem}
+#cmp input{flex:1;min-width:0;border:1px solid var(--line);border-radius:2rem;padding:.5rem .9rem}
+/* notify + profile */
+.noti{display:flex;gap:.75rem;padding:.8rem 1rem;border-bottom:1px solid var(--line);cursor:pointer}
+.noti:last-child{border:0}
+.noti.un{background:#EAF3FB}
+.noti .ic{width:2.4rem;height:2.4rem;border-radius:50%;background:#EDF3F8;display:grid;place-items:center;flex:none}
+.noti p{font-size:.85rem;color:var(--muted)}
+.noti time{font-size:.72rem;color:var(--muted)}
+.rl{display:flex;justify-content:space-between;gap:1rem;padding:.7rem 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.rl:last-child{border:0}.rl span{color:var(--muted)}
+.menu button{display:flex;width:100%;gap:.75rem;align-items:center;padding:.9rem 1rem;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left}
+.menu button:last-child{border:0}.menu button:hover{background:#F3F6F8}
+.menu i{margin-left:auto;font-style:normal;color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:calc(var(--navh) + 1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#191919;color:#fff;padding:.6rem 1.1rem;border-radius:2rem;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:90%;text-align:center}
+#toast.on{opacity:1}
+/* desktop */
+@media(min-width:820px){
+  body{padding-bottom:0}
+  #wrap{grid-template-columns:14rem minmax(0,1fr)}
+  #side{display:block}
+  #nav{position:static;height:auto;border:0;background:none;padding:0;margin-left:auto}
+  #nav button{flex:none;padding:.3rem 1.1rem;min-height:3.2rem;box-shadow:none!important;border-bottom:2px solid transparent}
+  #nav button.on{border-bottom-color:var(--text)}
+  .bd{left:auto;right:.5rem}
+  #roles{flex:1 1 auto}
+  #cmp{bottom:.75rem}
+  #toast{bottom:1.5rem}
+}
+@media(min-width:1100px){#wrap{grid-template-columns:14rem minmax(0,1fr) 16rem}#news{display:block}}
+</style>
+</head>
+<body data-role="seeker">
+
+<header id="top">
+  <div class="bar">
+    <div class="logo">JC</div>
+    <input class="search" id="q" data-p="search" aria-label="search">
+    <nav id="nav">
+      <button data-t="home" onclick="tab('home')"><span>🏠</span><em data-i="home"></em></button>
+      <button data-t="chat" onclick="tab('chat')"><span>💬</span><em data-i="chat"></em></button>
+      <button data-t="notify" onclick="tab('notify')"><span>🔔</span><em data-i="notify"></em><b class="bd hide" id="bd">0</b></button>
+      <button data-t="profile" onclick="tab('profile')"><span>👤</span><em data-i="profile"></em></button>
+    </nav>
+  </div>
+</header>
+
+<div id="tools">
+  <div id="roles"></div>
+  <div id="ctl">
+    <div class="grp" id="lang"></div>
+    <div class="grp">
+      <button class="pill" id="zm" onclick="zoom(-1)">A−</button>
+      <button class="pill" onclick="zoom(0)">A</button>
+      <button class="pill" id="zp" onclick="zoom(1)">A+</button>
+    </div>
+  </div>
+</div>
+
+<div id="wrap">
+  <aside id="side" class="card"></aside>
+  <main>
+    <section class="scr on" id="sc-home"></section>
+    <section class="scr" id="sc-chat">
+      <h2 data-i="msgs"></h2><p class="sub" data-i="msgsub"></p>
+      <div class="card flush list" id="chat-list"></div>
+    </section>
+    <section class="scr" id="sc-room">
+      <div class="row" style="justify-content:flex-start">
+        <button class="btn ghost sm" onclick="tab('chat')" aria-label="back">←</button>
+        <div class="av" id="rm-av"></div>
+        <div><b id="rm-name"></b><div class="sub" style="color:var(--ok)">● <span data-i="online"></span></div></div>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <div id="cmp"><input id="rm-inp" data-p="ph" onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn" onclick="sendMsg()" data-i="send"></button></div>
+    </section>
+    <section class="scr" id="sc-notify">
+      <div class="row"><h2 data-i="notis"></h2><button class="btn ghost sm" onclick="readAll()" data-i="readall"></button></div>
+      <div class="card flush list" id="noti-list" style="gap:0"></div>
+    </section>
+    <section class="scr" id="sc-profile"></section>
+  </main>
+  <aside id="news" class="card"></aside>
+</div>
+<div id="toast"></div>
+
+<script>
+var LGS=["th","en","zh"],ZS=[.875,1,1.125,1.25,1.5],LG=0,Z=1,CUR="home";
+/* ข้อความทุกภาษาเขียนเป็น "ไทย|English|中文" */
+var U={
+home:"หน้าหลัก|Home|首页",chat:"แชท|Messaging|消息",notify:"แจ้งเตือน|Alerts|通知",profile:"โปรไฟล์|Me|我",
+search:"ค้นหางาน บุคคล คอร์ส|Search jobs, people, courses|搜索职位、人才、课程",
+test:"โหมดทดสอบระบบ|Test mode|测试模式",testd:"ปิดระบบล็อกอินและ KYC ชั่วคราว|Login and KYC are temporarily off|登录与实名认证暂时关闭",ready:"พร้อมใช้|Ready|就绪",
+msgs:"ข้อความ|Messaging|消息",msgsub:"ทดสอบการรับ-ส่งข้อความ|Try sending and receiving messages|测试消息收发",
+notis:"การแจ้งเตือน|Notifications|通知",readall:"อ่านทั้งหมด|Mark all read|全部已读",markd:"ทำเครื่องหมายอ่านแล้วทั้งหมด|All marked as read|已全部标为已读",
+ph:"พิมพ์ข้อความ...|Write a message...|输入消息...",send:"ส่ง|Send|发送",online:"ออนไลน์|Online|在线",
+email:"อีเมล|Email|邮箱",phone:"เบอร์โทร|Phone|电话",mode:"โหมดปัจจุบัน|Current mode|当前模式",modev:"ทดสอบ (ไม่มีล็อกอิน)|Test (no login)|测试（无需登录）",
+edit:"แก้ไขข้อมูลส่วนตัว|Edit personal info|编辑个人信息",set:"ตั้งค่าระบบ|Settings|设置",help:"ศูนย์ช่วยเหลือ|Help center|帮助中心",reset:"ล้างข้อมูลทดสอบ|Reset test data|清除测试数据",
+note:"ระบบล็อกอินและ KYC ถูกปิดชั่วคราวเพื่อการทดสอบ|Login and KYC are off for testing.|登录与实名认证已暂时关闭，仅供测试。",
+sw:"สลับเป็น|Switched to|已切换为",open:"เปิด|Opening|打开",soon:"เร็วๆ นี้|Coming soon|即将推出",
+reply:"รับทราบครับ เดี๋ยวติดต่อกลับโดยเร็วที่สุด|Noted, we'll get back to you shortly.|收到，我们会尽快回复您。",
+fs:"ขนาดตัวอักษร|Text size|字号",name:"ผู้ใช้ทดสอบ|Test User|测试用户",
+news:"ข่าวสารตลาดแรงงาน|Job market news|就业市场资讯",
+n1:"ไอทีเปิดรับเพิ่ม 12%|IT hiring up 12%|IT岗位需求增长12%",n2:"ทักษะ AI ยอดนิยม|AI skills in demand|AI技能需求旺盛",n3:"งานทางไกลมาแรง|Remote work is rising|远程办公持续升温",
+r_seeker:"🧑‍💼 ผู้หางาน|🧑‍💼 Job Seeker|🧑‍💼 求职者",r_employer:"🏢 ผู้ว่าจ้าง|🏢 Employer|🏢 雇主",
+r_training:"🎓 ผู้ฝึกอบรม|🎓 Training|🎓 培训机构",r_consult:"🧠 ที่ปรึกษา|🧠 Consultant|🧠 顾问"
+};
+var DASH={
+seeker:{hd:"งานแนะนำสำหรับคุณ|Jobs for you|为您推荐",
+ st:[["24","งานแนะนำ|Recommended|推荐职位"],["8","ส่งใบสมัครแล้ว|Applied|已投递"],["3","นัดสัมภาษณ์|Interviews|面试"],["86%","โปรไฟล์สมบูรณ์|Profile strength|资料完整度"]],
+ it:[["🎨","UX/UI Designer","บ.เอบีซี · กรุงเทพฯ · ไฮบริด|ABC Co. · Bangkok · Hybrid|ABC公司 · 曼谷 · 混合办公","฿40–55K /เดือน|฿40–55K /mo|฿40–55K/月",92],
+     ["💻","Frontend Developer","ดิจิทัลเวิร์ค · ทางไกล 100%|DigitalWorks · 100% remote|DigitalWorks · 全远程","฿50–70K /เดือน|฿50–70K /mo|฿50–70K/月",78]]},
+employer:{hd:"ประกาศงานที่เปิดรับ|Open positions|在招职位",
+ st:[["6","ประกาศงานที่เปิด|Open jobs|在招职位"],["142","ผู้สมัครทั้งหมด|Applicants|申请人数"],["12","รอสัมภาษณ์|To interview|待面试"],["4","จ้างงานแล้ว|Hired|已录用"]],
+ it:[["🎨","UX/UI Designer","ผู้สมัคร 38 · ใหม่ 5|38 applicants · 5 new|38位申请者 · 新增5","ปิดรับใน 12 วัน|Closes in 12 days|12天后截止",88],
+     ["💻","Backend Engineer","ผู้สมัคร 61 · ใหม่ 9|61 applicants · 9 new|61位申请者 · 新增9","ปิดรับใน 6 วัน|Closes in 6 days|6天后截止",81]]},
+training:{hd:"คอร์สของคุณ|Your courses|您的课程",
+ st:[["9","คอร์สที่เปิดสอน|Live courses|开设课程"],["1,240","ผู้เรียนสะสม|Learners|累计学员"],["4.8","คะแนนเฉลี่ย|Avg. rating|平均评分"],["฿182K","รายได้เดือนนี้|Revenue|本月收入"]],
+ it:[["⚛️","React ฉบับมืออาชีพ|React Professional|React 专业版","420 คน · 4.9★|420 learners · 4.9★|420位学员 · 4.9★","฿2,900",null],
+     ["🐍","Python สำหรับงานข้อมูล|Python for Data|数据分析 Python","315 คน · 4.7★|315 learners · 4.7★|315位学员 · 4.7★","฿2,400",null]]},
+consult:{hd:"นัดหมายที่กำลังจะถึง|Upcoming sessions|即将到来的预约",
+ st:[["14","นัดหมายเดือนนี้|Sessions|本月预约"],["32","ลูกค้าสะสม|Clients|累计客户"],["4.9","คะแนนเฉลี่ย|Avg. rating|平均评分"],["฿96K","รายได้เดือนนี้|Revenue|本月收入"]],
+ it:[["🧠","ให้คำปรึกษาวางแผนอาชีพ|Career coaching|职业规划咨询","คุณสมหญิง · วันนี้ 14:00|Somying · Today 14:00|Somying · 今天14:00","฿1,500 /ชม.|฿1,500 /hr|฿1,500/小时",null],
+     ["📄","ตรวจเรซูเม่|Resume review|简历审阅","คุณธนา · พรุ่งนี้ 10:30|Thana · Tomorrow 10:30|Thana · 明天10:30","฿900 /ครั้ง|฿900 /session|฿900/次",null]]}
+};
+var S={role:"seeker",lg:0,z:1,chat:null,
+notis:[{ic:"💼",t:"มีงานใหม่ตรงกับโปรไฟล์|New job matches your profile|有新职位匹配您的资料",p:"UX/UI Designer · ABC · ฿45K",tm:"5 นาที|5 min ago|5分钟前",r:false},
+       {ic:"✅",t:"ใบสมัครถูกเปิดอ่าน|Your application was viewed|您的申请已被查看",p:"Frontend Developer",tm:"2 ชม.|2 h ago|2小时前",r:false},
+       {ic:"🎓",t:"คอร์สที่สนใจลดราคา|A course you follow is on sale|您关注的课程正在促销",p:"React −40%",tm:"เมื่อวาน|Yesterday|昨天",r:true}],
+chats:[{id:1,n:"ฝ่ายบุคคล — ABC|HR — ABC Co.|ABC公司人事部",un:2,tm:"10:24",
+  msgs:[{s:"them",t:"สวัสดีครับ สนใจโปรไฟล์คุณมากครับ|Hello! We like your profile.|您好！我们对您的资料很感兴趣。",tm:"10:20"},
+        {s:"me",t:"ขอบคุณครับ ยินดีมากครับ|Thank you, I'm delighted!|谢谢，非常荣幸！",tm:"10:22"},
+        {s:"them",t:"สะดวกสัมภาษณ์วันพฤหัสฯ 10:00 ไหมครับ|Are you free for an interview Thursday at 10:00?|周四10:00方便面试吗？",tm:"10:24"}]},
+ {id:2,n:"ครูมานี|Ms. Manee (trainer)|Manee老师",un:0,tm:"เมื่อวาน|Yesterday|昨天",
+  msgs:[{s:"them",t:"คอร์สรอบใหม่เปิดรับแล้วค่ะ|The new course batch is open.|新一期课程已开放报名。",tm:"18:02"}]}]};
+
+function $(i){return document.getElementById(i)}
+function L(s){var a=String(s).split("|");return a[LG]||a[0]}
+function t(k){return L(U[k])}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function save(){try{localStorage.setItem("jsc_v2",JSON.stringify(S))}catch(e){}}
+function load(){try{var d=JSON.parse(localStorage.getItem("jsc_v2")||"null");if(d)for(var k in d)S[k]=d[k]}catch(e){}}
+function resetDemo(){try{localStorage.removeItem("jsc_v2")}catch(e){}location.reload()}
+function toast(m){var e=$("toast");e.textContent=m;e.classList.add("on");clearTimeout(e._x);e._x=setTimeout(function(){e.classList.remove("on")},2200)}
+function ring(m){return'<div class="ring" style="--p:'+m+';--c:'+(m>=85?"var(--ok)":"var(--warn)")+'" title="Match '+m+'%"><span>'+m+'%</span></div>'}
+
+/* ภาษา + ขนาดตัวอักษร */
+function setLang(i){LG=i;S.lg=i;document.documentElement.lang=LGS[i];save();renderAll()}
+function applyZ(){document.documentElement.style.fontSize=ZS[Z]*16+"px";$("zm").disabled=Z===0;$("zp").disabled=Z===ZS.length-1}
+function zoom(d){Z=d===0?1:Math.max(0,Math.min(ZS.length-1,Z+d));S.z=Z;applyZ();save()}
+
+/* Router */
+var B={home:buildHome,chat:buildChats,notify:buildNotis,profile:buildProfile};
+function tab(k){
+  CUR=k;
+  if(B[k])B[k]();
+  var all=document.querySelectorAll(".scr");
+  for(var i=0;i<all.length;i++)all[i].classList.toggle("on",all[i].id==="sc-"+k);
+  var nb=document.querySelectorAll("#nav button"),cur=k==="room"?"chat":k;
+  for(i=0;i<nb.length;i++)nb[i].classList.toggle("on",nb[i].dataset.t===cur);
+  window.scrollTo(0,0);
+}
+function setRole(k){S.role=k;save();document.body.setAttribute("data-role",k);renderAll();tab("home");toast(t("sw")+" "+L(U["r_"+k]))}
+
+function renderAll(){
+  var a=document.querySelectorAll("[data-i]"),i;
+  for(i=0;i<a.length;i++)a[i].textContent=t(a[i].dataset.i);
+  a=document.querySelectorAll("[data-p]");
+  for(i=0;i<a.length;i++)a[i].placeholder=t(a[i].dataset.p);
+  $("zm").title=$("zp").title=t("fs");
+  var h="";for(var k in DASH)h+='<button class="pill'+(k===S.role?" on":"")+'" onclick="setRole(\''+k+'\')">'+t("r_"+k)+"</button>";
+  $("roles").innerHTML=h;
+  h="";["ไทย","EN","中文"].forEach(function(n,j){h+='<button class="pill'+(j===LG?" on":"")+'" onclick="setLang('+j+')">'+n+"</button>"});
+  $("lang").innerHTML=h;
+  var d=DASH[S.role];
+  h='<div class="cover"></div><div class="av big">'+esc(t("name").charAt(0))+"</div><b>"+t("name")+'</b><p class="sub">'+L(U["r_"+S.role]).replace(/^\S+\s/,"")+"</p>";
+  d.st.slice(0,2).forEach(function(x){h+='<div class="mini"><span>'+L(x[1])+"</span><strong>"+x[0]+"</strong></div>"});
+  $("side").innerHTML=h;
+  $("news").innerHTML="<h3>"+t("news")+"</h3><p>"+t("n1")+"</p><p>"+t("n2")+"</p><p>"+t("n3")+"</p>";
+  buildNotis();
+  if(CUR==="room")openRoom(S.chat,true);else B[CUR]();
+}
+
+/* Home */
+function buildHome(){
+  var d=DASH[S.role],h='<div class="card row"><div><b>'+t("test")+'</b><p class="sub">'+t("testd")+'</p></div><span class="chip">'+t("ready")+'</span></div><div class="stats">';
+  d.st.forEach(function(x){h+='<div class="card stat"><b>'+x[0]+"</b><span>"+L(x[1])+"</span></div>"});
+  h+="</div><h2>"+L(d.hd)+'</h2><div class="list">';
+  d.it.forEach(function(x,i){h+='<div class="card job" onclick="jobTap('+i+')"><div class="lg">'+x[0]+'</div><div class="grow"><b>'+esc(L(x[1]))+"</b><small>"+esc(L(x[2]))+'</small><span class="price">'+esc(L(x[3]))+"</span></div>"+(x[4]?ring(x[4]):"")+"</div>"});
+  $("sc-home").innerHTML=h+"</div>";
+}
+function jobTap(i){toast(t("open")+": "+L(DASH[S.role].it[i][1]))}
+
+/* Chat */
+function findChat(id){for(var i=0;i<S.chats.length;i++)if(S.chats[i].id===id)return S.chats[i];return null}
+function lastOf(c){return c.msgs[c.msgs.length-1]}
+function buildChats(){
+  var h="";
+  S.chats.forEach(function(c){
+    var n=L(c.n);
+    h+='<div class="ci" onclick="openRoom('+c.id+')"><div class="av">'+esc(n.charAt(0))+'</div><div class="grow"><b>'+esc(n)+"</b><small>"+esc(L(lastOf(c).t))+'</small></div><div class="tm">'+esc(L(c.tm))+(c.un?'<br><span class="chip b">'+c.un+"</span>":"")+"</div></div>";
+  });
+  $("chat-list").innerHTML=h;
+}
+function openRoom(id,keep){
+  var c=findChat(id);if(!c)return;
+  c.un=0;S.chat=id;save();
+  $("rm-name").textContent=L(c.n);$("rm-av").textContent=L(c.n).charAt(0);
+  drawMsgs();
+  if(!keep)tab("room");else CUR="room";
+}
+function drawMsgs(){
+  var c=findChat(S.chat),h="";if(!c)return;
+  c.msgs.forEach(function(m){h+='<div class="msg '+m.s+'">'+esc(L(m.t))+"<time>"+m.tm+"</time></div>"});
+  $("msgs").innerHTML=h;
+  setTimeout(function(){window.scrollTo(0,document.body.scrollHeight)},50);
+}
+function sendMsg(){
+  var i=$("rm-inp"),v=i.value.trim().replace(/\|/g,"/"),c=findChat(S.chat);
+  if(!v||!c)return;
+  var now=new Date().toTimeString().slice(0,5);
+  c.msgs.push({s:"me",t:v,tm:now});i.value="";drawMsgs();save();
+  setTimeout(function(){c.msgs.push({s:"them",t:U.reply,tm:now});drawMsgs();save()},1200);
+}
+
+/* Notifications */
+function buildNotis(){
+  var h="",un=0;
+  S.notis.forEach(function(n,i){
+    if(!n.r)un++;
+    h+='<div class="noti'+(n.r?"":" un")+'" onclick="readOne('+i+')"><div class="ic">'+n.ic+'</div><div><b>'+esc(L(n.t))+"</b><p>"+esc(L(n.p))+"</p><time>"+esc(L(n.tm))+"</time></div></div>";
+  });
+  $("noti-list").innerHTML=h;
+  var b=$("bd");b.textContent=un;b.classList.toggle("hide",un===0);
+}
+function readOne(i){S.notis[i].r=true;save();buildNotis()}
+function readAll(){S.notis.forEach(function(n){n.r=true});save();buildNotis();toast(t("markd"))}
+
+/* Profile */
+function buildProfile(){
+  var nm=t("name");
+  $("sc-profile").innerHTML='<div class="card"><div class="row" style="justify-content:flex-start"><div class="av big" style="margin:0">'+esc(nm.charAt(0))+'</div><div><h2 style="margin:0">'+nm+'</h2><span class="chip b">'+L(U["r_"+S.role])+'</span> <span class="chip">'+t("test")+'</span></div></div>'
+  +'<div style="margin-top:.75rem"><div class="rl"><span>'+t("email")+'</span><b>test@demo.local</b></div><div class="rl"><span>'+t("phone")+'</span><b>08X-XXX-XXXX</b></div><div class="rl"><span>'+t("mode")+"</span><b>"+t("modev")+"</b></div></div></div>"
+  +'<div class="card flush menu" style="margin-top:.75rem"><button onclick="toast(t(\'soon\'))">✏️ '+t("edit")+'<i>›</i></button><button onclick="toast(t(\'soon\'))">⚙️ '+t("set")+'<i>›</i></button><button onclick="toast(t(\'soon\'))">💬 '+t("help")+'<i>›</i></button><button onclick="resetDemo()" style="color:var(--err)">🔄 '+t("reset")+"<i>›</i></button></div>"
+  +'<p class="sub" style="margin-top:.75rem">'+t("note")+"</p>";
+}
+
+document.addEventListener("DOMContentLoaded",function(){
+  load();LG=S.lg||0;Z=S.z===undefined?1:S.z;
+  document.documentElement.lang=LGS[LG];
+  document.body.setAttribute("data-role",S.role);
+  applyZ();renderAll();tab("home");
+});
+</script>
+</body>
+</html>
